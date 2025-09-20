@@ -10,6 +10,7 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    environment: actions
     
     steps:
     - name: Checkout repository
