@@ -36,11 +36,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
-    - name: Create .env file
-      run: |
-        echo "SPOTIPY_CLIENT_ID=${{ secrets.SPOTIPY_CLIENT_ID }}" >> .env
-        echo "SPOTIPY_CLIENT_SECRET=${{ secrets.SPOTIPY_CLIENT_SECRET }}" >> .env
-    
     - name: Check if config.yml exists
       run: |
         if [ ! -f config.yml ]; then
@@ -50,6 +45,9 @@ jobs:
     
     - name: Run sync script
       run: python sync.py
+      env:
+          SPOTIPY_CLIENT_ID: ${{ secrets.SPOTIPY_CLIENT_ID }}
+          SPOTIPY_CLIENT_SECRET: ${{ secrets.SPOTIPY_CLIENT_SECRET }}
     
     - name: Check for changes
       id: check_changes
@@ -63,8 +61,8 @@ jobs:
     - name: Commit and push changes
       if: steps.check_changes.outputs.changes == 'true'
       run: |
-        git config --local user.email "maanujvora@gmail.com"
-        git config --local user.name "Maanuj-Vora"
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
         git add -A
         git commit -m "Auto-sync: Update Spotify playlist data [$(date +'%Y-%m-%d %H:%M:%S UTC')]"
         git push
