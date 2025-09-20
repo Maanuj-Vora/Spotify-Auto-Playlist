@@ -63,8 +63,8 @@ jobs:
     - name: Commit and push changes
       if: steps.check_changes.outputs.changes == 'true'
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
+        git config --local user.email "maanujvora@gmail.com"
+        git config --local user.name "Maanuj-Vora"
         git add -A
         git commit -m "Auto-sync: Update Spotify playlist data [$(date +'%Y-%m-%d %H:%M:%S UTC')]"
         git push
