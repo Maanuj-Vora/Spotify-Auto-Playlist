@@ -1,0 +1,12 @@
+# List of Spotify usernames whose playlists should be tracked
+# These users' public playlists will be monitored for changes
+usernames:
+  - "your_spotify_username"
+  # - "friend_username"
+  # - "another_user"
+
+# List of specific playlist IDs to track
+playlists_to_track:
+  - "your_playlist_id_here"
+  # - "608nLi4vcW2fghX9ixvPih"  # Example playlist ID
+  # - "6lmcb1DUOBmdLxAg6BI8xM"  # Another example
