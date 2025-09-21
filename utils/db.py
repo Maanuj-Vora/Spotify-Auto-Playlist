@@ -5,6 +5,7 @@ DB_PATH = "databases/spotify.db"
 
 _session_connection = None
 
+
 @contextmanager
 def get_connection(db_path=DB_PATH):
     conn = sqlite3.connect(db_path)
@@ -14,6 +15,7 @@ def get_connection(db_path=DB_PATH):
     finally:
         conn.close()
 
+
 def init_session(db_path=DB_PATH):
     global _session_connection
     if _session_connection is None:
@@ -21,14 +23,17 @@ def init_session(db_path=DB_PATH):
         _session_connection.row_factory = sqlite3.Row
     return _session_connection
 
+
 def get_session_connection():
     return _session_connection
+
 
 def close_session():
     global _session_connection
     if _session_connection is not None:
         _session_connection.close()
         _session_connection = None
+
 
 @contextmanager
 def session_context(db_path=DB_PATH):
@@ -37,6 +42,7 @@ def session_context(db_path=DB_PATH):
         yield _session_connection
     finally:
         close_session()
+
 
 def execute_query(query, params=None, db_path=DB_PATH, use_session=False):
     if use_session and _session_connection is not None:
@@ -51,6 +57,7 @@ def execute_query(query, params=None, db_path=DB_PATH, use_session=False):
             conn.commit()
             return cursor
 
+
 def fetch_all(query, params=None, db_path=DB_PATH, use_session=False):
     if use_session and _session_connection is not None:
         cursor = _session_connection.cursor()
@@ -63,6 +70,7 @@ def fetch_all(query, params=None, db_path=DB_PATH, use_session=False):
             cursor.execute(query, params or [])
             rows = cursor.fetchall()
             return [dict(row) for row in rows]
+
 
 def fetch_one(query, params=None, db_path=DB_PATH, use_session=False):
     if use_session and _session_connection is not None:
@@ -77,18 +85,29 @@ def fetch_one(query, params=None, db_path=DB_PATH, use_session=False):
             row = cursor.fetchone()
             return dict(row) if row else None
 
+
 def _execute_query_auto(query, params=None, db_path=DB_PATH):
-    return execute_query(query, params, db_path, use_session=(_session_connection is not None))
+    return execute_query(
+        query, params, db_path, use_session=(_session_connection is not None)
+    )
+
 
 def _fetch_all_auto(query, params=None, db_path=DB_PATH):
-    return fetch_all(query, params, db_path, use_session=(_session_connection is not None))
+    return fetch_all(
+        query, params, db_path, use_session=(_session_connection is not None)
+    )
+
 
 def _fetch_one_auto(query, params=None, db_path=DB_PATH):
-    return fetch_one(query, params, db_path, use_session=(_session_connection is not None))
+    return fetch_one(
+        query, params, db_path, use_session=(_session_connection is not None)
+    )
+
 
 def _auto_session_kwargs():
     return {"use_session": _session_connection is not None}
-    
+
+
 def create_tables(db_path=DB_PATH):
     use_session = _session_connection is not None
     create_playlists_table(db_path=db_path, use_session=use_session)
@@ -98,9 +117,12 @@ def create_tables(db_path=DB_PATH):
     create_songs_table(db_path=db_path, use_session=use_session)
     create_playlist_songs_table(db_path=db_path, use_session=use_session)
     create_song_artists_table(db_path=db_path, use_session=use_session)
-    
+    create_managed_playlists_table(db_path=db_path, use_session=use_session)
+
+
 # Playlists fields
 # id (TEXT PRIMARY KEY), name (TEXT), description (TEXT), owner_id (TEXT), snapshot_id (TEXT), public (INTEGER), collaborative (INTEGER), tracks_total (INTEGER), href (TEXT), uri (TEXT)
+
 
 def create_playlists_table(db_path=DB_PATH, use_session=False):
     query = """
@@ -119,8 +141,10 @@ def create_playlists_table(db_path=DB_PATH, use_session=False):
     """
     execute_query(query, db_path=db_path, use_session=use_session)
 
+
 # Playlist changes fields
 # id (INTEGER PRIMARY KEY AUTOINCREMENT), playlist_id (TEXT), playlist_name (TEXT), change_type (TEXT), old_snapshot_id (TEXT), new_snapshot_id (TEXT), detected_at (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+
 
 def create_queue_table(db_path=DB_PATH, use_session=False):
     query = """
@@ -137,9 +161,11 @@ def create_queue_table(db_path=DB_PATH, use_session=False):
     """
     execute_query(query, db_path=db_path, use_session=use_session)
 
+
 # Action Log fields
-# id (INTEGER PRIMARY KEY AUTOINCREMENT), action_type (TEXT), entity_type (TEXT), entity_id (TEXT), entity_name (TEXT), 
+# id (INTEGER PRIMARY KEY AUTOINCREMENT), action_type (TEXT), entity_type (TEXT), entity_id (TEXT), entity_name (TEXT),
 # reason (TEXT), details (TEXT), success (INTEGER), error_message (TEXT), timestamp (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+
 
 def create_action_log_table(db_path=DB_PATH, use_session=False):
     query = """
@@ -158,8 +184,10 @@ def create_action_log_table(db_path=DB_PATH, use_session=False):
     """
     execute_query(query, db_path=db_path, use_session=use_session)
 
+
 # Artists fields
 # id (TEXT PRIMARY KEY), name (TEXT), genres (TEXT), popularity (INTEGER), followers_total (INTEGER), href (TEXT), uri (TEXT), external_urls (TEXT)
+
 
 def create_artists_table(db_path=DB_PATH, use_session=False):
     query = """
@@ -176,8 +204,10 @@ def create_artists_table(db_path=DB_PATH, use_session=False):
     """
     execute_query(query, db_path=db_path, use_session=use_session)
 
+
 # Songs fields
 # id (TEXT PRIMARY KEY), name (TEXT), duration_ms (INTEGER), explicit (INTEGER), popularity (INTEGER), preview_url (TEXT), href (TEXT), uri (TEXT), external_urls (TEXT)
+
 
 def create_songs_table(db_path=DB_PATH, use_session=False):
     query = """
@@ -197,8 +227,10 @@ def create_songs_table(db_path=DB_PATH, use_session=False):
     """
     execute_query(query, db_path=db_path, use_session=use_session)
 
+
 # Playlist Songs junction table (many-to-many relationship)
 # playlist_id (TEXT), song_id (TEXT)
+
 
 def create_playlist_songs_table(db_path=DB_PATH, use_session=False):
     query = """
@@ -212,8 +244,10 @@ def create_playlist_songs_table(db_path=DB_PATH, use_session=False):
     """
     execute_query(query, db_path=db_path, use_session=use_session)
 
+
 # Song Artists junction table (many-to-many relationship)
 # song_id (TEXT), artist_id (TEXT)
+
 
 def create_song_artists_table(db_path=DB_PATH, use_session=False):
     query = """
@@ -227,7 +261,29 @@ def create_song_artists_table(db_path=DB_PATH, use_session=False):
     """
     execute_query(query, db_path=db_path, use_session=use_session)
 
+
+# Managed Playlists table
+# filename (TEXT PRIMARY KEY), playlist_id (TEXT), title (TEXT), description (TEXT), public (INTEGER), last_updated (TIMESTAMP)
+
+
+def create_managed_playlists_table(db_path=DB_PATH, use_session=False):
+    query = """
+    CREATE TABLE IF NOT EXISTS managed_playlists (
+        filename TEXT PRIMARY KEY,
+        playlist_id TEXT UNIQUE,
+        title TEXT,
+        description TEXT,
+        public INTEGER DEFAULT 0,
+        add_to_profile INTEGER DEFAULT 0,
+        library_folder TEXT DEFAULT NULL,
+        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """
+    execute_query(query, db_path=db_path, use_session=use_session)
+
+
 # --- Playlists Functions ---
+
 
 def insert_playlist(playlist, db_path=DB_PATH):
     query = """
@@ -249,45 +305,60 @@ def insert_playlist(playlist, db_path=DB_PATH):
     )
     _execute_query_auto(query, params, db_path=db_path)
 
+
 def get_playlist_by_id(playlist_id, db_path=DB_PATH):
     query = "SELECT * FROM playlists WHERE id = ?"
     return _fetch_one_auto(query, [playlist_id], db_path=db_path)
+
 
 def get_all_playlists(db_path=DB_PATH):
     query = "SELECT * FROM playlists"
     return _fetch_all_auto(query, db_path=db_path)
 
+
 def delete_playlist(playlist_id, db_path=DB_PATH):
     query = "DELETE FROM playlists WHERE id = ?"
     _execute_query_auto(query, [playlist_id], db_path=db_path)
 
+
 def check_playlist_modified(playlist, db_path=DB_PATH):
     stored_playlist = get_playlist_by_id(playlist.get("id"), db_path=db_path)
-    
+
     if not stored_playlist:
         return True
-    
+
     stored_snapshot_id = stored_playlist["snapshot_id"]
     current_snapshot_id = playlist.get("snapshot_id")
-    
+
     return stored_snapshot_id != current_snapshot_id
+
 
 def get_modified_playlists(current_playlists, db_path=DB_PATH):
     modified_playlists = []
-    
+
     for playlist in current_playlists:
         if check_playlist_modified(playlist, db_path=db_path):
             modified_playlists.append(playlist)
-    
+
     return modified_playlists
+
 
 def get_playlist_snapshot_id(playlist_id, db_path=DB_PATH):
     playlist = get_playlist_by_id(playlist_id, db_path=db_path)
     return playlist["snapshot_id"] if playlist else None
 
+
 # --- Playlist Changes Functions ---
 
-def insert_playlist_change(playlist_id, playlist_name, change_type, old_snapshot_id=None, new_snapshot_id=None, db_path=DB_PATH):
+
+def insert_playlist_change(
+    playlist_id,
+    playlist_name,
+    change_type,
+    old_snapshot_id=None,
+    new_snapshot_id=None,
+    db_path=DB_PATH,
+):
     query = """
     INSERT INTO queue (
         playlist_id, playlist_name, change_type, old_snapshot_id, new_snapshot_id
@@ -296,25 +367,31 @@ def insert_playlist_change(playlist_id, playlist_name, change_type, old_snapshot
     params = (playlist_id, playlist_name, change_type, old_snapshot_id, new_snapshot_id)
     execute_query(query, params, db_path=db_path)
 
+
 def get_queue(limit=None, db_path=DB_PATH):
     query = "SELECT * FROM queue ORDER BY detected_at DESC"
     if limit:
         query += f" LIMIT {limit}"
     return fetch_all(query, db_path=db_path)
 
+
 def get_queue_by_id(playlist_id, db_path=DB_PATH):
     query = "SELECT * FROM queue WHERE playlist_id = ? ORDER BY detected_at DESC"
     return fetch_all(query, [playlist_id], db_path=db_path)
+
 
 def delete_queue(playlist_id, db_path=DB_PATH):
     query = "DELETE FROM queue WHERE playlist_id = ?"
     execute_query(query, [playlist_id], db_path=db_path)
 
+
 def clear_queue(db_path=DB_PATH):
     query = "DELETE FROM queue"
     execute_query(query, db_path=db_path)
 
+
 # --- Artists Functions ---
+
 
 def insert_artist(artist, db_path=DB_PATH):
     query = """
@@ -323,8 +400,10 @@ def insert_artist(artist, db_path=DB_PATH):
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """
     genres_str = ", ".join(artist.get("genres", [])) if artist.get("genres") else None
-    external_urls_str = str(artist.get("external_urls", {})) if artist.get("external_urls") else None
-    
+    external_urls_str = (
+        str(artist.get("external_urls", {})) if artist.get("external_urls") else None
+    )
+
     params = (
         artist.get("id"),
         artist.get("name"),
@@ -337,19 +416,24 @@ def insert_artist(artist, db_path=DB_PATH):
     )
     execute_query(query, params, db_path=db_path)
 
+
 def get_artist_by_id(artist_id, db_path=DB_PATH):
     query = "SELECT * FROM artists WHERE id = ?"
     return fetch_one(query, [artist_id], db_path=db_path)
+
 
 def get_all_artists(db_path=DB_PATH):
     query = "SELECT * FROM artists"
     return fetch_all(query, db_path=db_path)
 
+
 def delete_artist(artist_id, db_path=DB_PATH):
     query = "DELETE FROM artists WHERE id = ?"
     execute_query(query, [artist_id], db_path=db_path)
 
+
 # --- Songs Functions ---
+
 
 def insert_song(track, db_path=DB_PATH):
     query = """
@@ -357,8 +441,10 @@ def insert_song(track, db_path=DB_PATH):
         id, name, duration_ms, explicit, popularity, preview_url, href, uri, external_urls, album_id, album_name
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
-    external_urls_str = str(track.get("external_urls", {})) if track.get("external_urls") else None
-    
+    external_urls_str = (
+        str(track.get("external_urls", {})) if track.get("external_urls") else None
+    )
+
     params = (
         track.get("id"),
         track.get("name"),
@@ -374,19 +460,24 @@ def insert_song(track, db_path=DB_PATH):
     )
     execute_query(query, params, db_path=db_path)
 
+
 def get_song_by_id(song_id, db_path=DB_PATH):
     query = "SELECT * FROM songs WHERE id = ?"
     return fetch_one(query, [song_id], db_path=db_path)
+
 
 def get_all_songs(db_path=DB_PATH):
     query = "SELECT * FROM songs"
     return fetch_all(query, db_path=db_path)
 
+
 def delete_song(song_id, db_path=DB_PATH):
     query = "DELETE FROM songs WHERE id = ?"
     execute_query(query, [song_id], db_path=db_path)
 
+
 # --- Playlist Songs Junction Functions ---
+
 
 def insert_playlist_song(playlist_id, song_id, db_path=DB_PATH):
     query = """
@@ -397,6 +488,7 @@ def insert_playlist_song(playlist_id, song_id, db_path=DB_PATH):
     params = (playlist_id, song_id)
     execute_query(query, params, db_path=db_path)
 
+
 def get_songs_in_playlist(playlist_id, db_path=DB_PATH):
     query = """
     SELECT s.* 
@@ -405,6 +497,7 @@ def get_songs_in_playlist(playlist_id, db_path=DB_PATH):
     WHERE ps.playlist_id = ?
     """
     return fetch_all(query, [playlist_id], db_path=db_path)
+
 
 def get_playlists_with_song(song_id, db_path=DB_PATH):
     query = """
@@ -415,14 +508,17 @@ def get_playlists_with_song(song_id, db_path=DB_PATH):
     """
     return fetch_all(query, [song_id], db_path=db_path)
 
+
 def delete_playlist_song(playlist_id, song_id, db_path=DB_PATH):
     query = "DELETE FROM playlist_songs WHERE playlist_id = ? AND song_id = ?"
     execute_query(query, [playlist_id, song_id], db_path=db_path)
+
 
 def song_exists_in_playlist(playlist_id, song_id, db_path=DB_PATH):
     query = "SELECT 1 FROM playlist_songs WHERE playlist_id = ? AND song_id = ?"
     result = fetch_one(query, [playlist_id, song_id], db_path=db_path)
     return result is not None
+
 
 def add_song_to_playlist_if_not_exists(playlist_id, song_id, db_path=DB_PATH):
     if not song_exists_in_playlist(playlist_id, song_id, db_path):
@@ -430,33 +526,36 @@ def add_song_to_playlist_if_not_exists(playlist_id, song_id, db_path=DB_PATH):
         return True
     return False
 
+
 def sync_playlist_songs(playlist_id, current_song_ids, db_path=DB_PATH):
     stored_songs = get_songs_in_playlist(playlist_id, db_path)
-    stored_song_ids = {song['id'] for song in stored_songs}
+    stored_song_ids = {song["id"] for song in stored_songs}
     current_song_ids_set = set(current_song_ids)
-    
+
     songs_to_add = current_song_ids_set - stored_song_ids
-    
+
     songs_to_remove = stored_song_ids - current_song_ids_set
-    
+
     added_count = 0
     for song_id in songs_to_add:
         insert_playlist_song(playlist_id, song_id, db_path)
         added_count += 1
-    
+
     removed_count = 0
     for song_id in songs_to_remove:
         delete_playlist_song(playlist_id, song_id, db_path)
         removed_count += 1
-    
+
     return {
-        'added': added_count,
-        'removed': removed_count,
-        'songs_added': list(songs_to_add),
-        'songs_removed': list(songs_to_remove)
+        "added": added_count,
+        "removed": removed_count,
+        "songs_added": list(songs_to_add),
+        "songs_removed": list(songs_to_remove),
     }
 
+
 # --- Song Artists Junction Functions ---
+
 
 def insert_song_artist(song_id, artist_id, db_path=DB_PATH):
     query = """
@@ -467,6 +566,7 @@ def insert_song_artist(song_id, artist_id, db_path=DB_PATH):
     params = (song_id, artist_id)
     execute_query(query, params, db_path=db_path)
 
+
 def get_artists_for_song(song_id, db_path=DB_PATH):
     query = """
     SELECT a.* 
@@ -475,6 +575,7 @@ def get_artists_for_song(song_id, db_path=DB_PATH):
     WHERE sa.song_id = ?
     """
     return fetch_all(query, [song_id], db_path=db_path)
+
 
 def get_songs_by_artist(artist_id, db_path=DB_PATH):
     query = """
@@ -485,6 +586,7 @@ def get_songs_by_artist(artist_id, db_path=DB_PATH):
     """
     return fetch_all(query, [artist_id], db_path=db_path)
 
+
 def delete_song_artist(song_id, artist_id, db_path=DB_PATH):
     query = "DELETE FROM song_artists WHERE song_id = ? AND artist_id = ?"
     execute_query(query, [song_id, artist_id], db_path=db_path)
@@ -492,23 +594,32 @@ def delete_song_artist(song_id, artist_id, db_path=DB_PATH):
 
 # --- Orphan Cleanup Functions ---
 
+
 def get_orphaned_playlists(currently_tracked_playlist_ids, db_path=DB_PATH):
     if not currently_tracked_playlist_ids:
         query = "SELECT * FROM playlists"
         return fetch_all(query, db_path=db_path)
-    placeholders = ','.join(['?' for _ in currently_tracked_playlist_ids])
+    placeholders = ",".join(["?" for _ in currently_tracked_playlist_ids])
     query = f"""
     SELECT * FROM playlists 
     WHERE id NOT IN ({placeholders})
     """
     return fetch_all(query, currently_tracked_playlist_ids, db_path=db_path)
 
+
 def delete_playlist_and_relationships(playlist_id, db_path=DB_PATH):
 
-    execute_query("DELETE FROM playlist_songs WHERE playlist_id = ?", [playlist_id], db_path=db_path)
-    execute_query("DELETE FROM queue WHERE playlist_id = ?", [playlist_id], db_path=db_path)
+    execute_query(
+        "DELETE FROM playlist_songs WHERE playlist_id = ?",
+        [playlist_id],
+        db_path=db_path,
+    )
+    execute_query(
+        "DELETE FROM queue WHERE playlist_id = ?", [playlist_id], db_path=db_path
+    )
     execute_query("DELETE FROM playlists WHERE id = ?", [playlist_id], db_path=db_path)
     return True
+
 
 def delete_orphaned_playlist_songs(db_path=DB_PATH):
     query = """
@@ -518,6 +629,7 @@ def delete_orphaned_playlist_songs(db_path=DB_PATH):
     cursor = execute_query(query, db_path=db_path)
     return cursor.rowcount
 
+
 def delete_orphaned_song_artists(db_path=DB_PATH):
     query = """
     DELETE FROM song_artists 
@@ -525,6 +637,7 @@ def delete_orphaned_song_artists(db_path=DB_PATH):
     """
     cursor = execute_query(query, db_path=db_path)
     return cursor.rowcount
+
 
 def get_orphaned_songs(db_path=DB_PATH):
     query = """
@@ -535,6 +648,7 @@ def get_orphaned_songs(db_path=DB_PATH):
     """
     return fetch_all(query, db_path=db_path)
 
+
 def get_orphaned_artists(db_path=DB_PATH):
     query = """
     SELECT a.* 
@@ -544,9 +658,21 @@ def get_orphaned_artists(db_path=DB_PATH):
     """
     return fetch_all(query, db_path=db_path)
 
+
 # --- Action Log Functions ---
 
-def log_action(action_type, entity_type, entity_id, entity_name, reason, details=None, success=True, error_message=None, db_path=DB_PATH):
+
+def log_action(
+    action_type,
+    entity_type,
+    entity_id,
+    entity_name,
+    reason,
+    details=None,
+    success=True,
+    error_message=None,
+    db_path=DB_PATH,
+):
     query = """
     INSERT INTO action_log (
         action_type, entity_type, entity_id, entity_name, reason, details, success, error_message
@@ -560,52 +686,67 @@ def log_action(action_type, entity_type, entity_id, entity_name, reason, details
         reason,
         details,
         int(success),
-        error_message
+        error_message,
     )
     execute_query(query, params, db_path=db_path)
 
-def get_action_logs(limit=None, action_type=None, entity_type=None, entity_id=None, success=None, db_path=DB_PATH):
+
+def get_action_logs(
+    limit=None,
+    action_type=None,
+    entity_type=None,
+    entity_id=None,
+    success=None,
+    db_path=DB_PATH,
+):
     query = "SELECT * FROM action_log WHERE 1=1"
     params = []
-    
+
     if action_type:
         query += " AND action_type = ?"
         params.append(action_type)
-    
+
     if entity_type:
         query += " AND entity_type = ?"
         params.append(entity_type)
-    
+
     if entity_id:
         query += " AND entity_id = ?"
         params.append(entity_id)
-    
+
     if success is not None:
         query += " AND success = ?"
         params.append(int(success))
-    
+
     query += " ORDER BY timestamp DESC"
-    
+
     if limit:
         query += f" LIMIT {limit}"
-    
+
     return fetch_all(query, params, db_path=db_path)
+
 
 def get_recent_action_logs(hours=24, db_path=DB_PATH):
     query = """
     SELECT * FROM action_log 
     WHERE timestamp >= datetime('now', '-{} hours')
     ORDER BY timestamp DESC
-    """.format(hours)
+    """.format(
+        hours
+    )
     return fetch_all(query, db_path=db_path)
+
 
 def clear_old_action_logs(days_to_keep=30, db_path=DB_PATH):
     query = """
     DELETE FROM action_log 
     WHERE timestamp < datetime('now', '-{} days')
-    """.format(days_to_keep)
+    """.format(
+        days_to_keep
+    )
     cursor = execute_query(query, db_path=db_path)
     return cursor.rowcount
+
 
 def get_action_log_summary(db_path=DB_PATH):
     query = """
@@ -620,3 +761,170 @@ def get_action_log_summary(db_path=DB_PATH):
     ORDER BY action_type, entity_type, success
     """
     return fetch_all(query, db_path=db_path)
+
+
+# --- Managed Playlists Functions ---
+
+
+def get_managed_playlist(filename, db_path=DB_PATH):
+    query = "SELECT * FROM managed_playlists WHERE filename = ?"
+    return _fetch_one_auto(query, [filename], db_path=db_path)
+
+
+def save_managed_playlist(
+    filename,
+    playlist_id,
+    title,
+    description,
+    public=False,
+    add_to_profile=False,
+    library_folder=None,
+    db_path=DB_PATH,
+):
+    query = """
+    INSERT OR REPLACE INTO managed_playlists 
+    (filename, playlist_id, title, description, public, add_to_profile, library_folder, last_updated) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    """
+    params = (
+        filename,
+        playlist_id,
+        title,
+        description,
+        int(public),
+        int(add_to_profile),
+        library_folder,
+    )
+    _execute_query_auto(query, params, db_path=db_path)
+
+
+def get_all_managed_playlists(db_path=DB_PATH):
+    query = "SELECT * FROM managed_playlists ORDER BY last_updated DESC"
+    return _fetch_all_auto(query, db_path=db_path)
+
+
+def delete_managed_playlist(filename, db_path=DB_PATH):
+    query = "DELETE FROM managed_playlists WHERE filename = ?"
+    _execute_query_auto(query, [filename], db_path=db_path)
+
+
+# --- Random Functions ---
+
+
+def get_filtered_songs(
+    playlist_ids=None,
+    artist_ids=None,
+    artist_names=None,
+    genres=None,
+    min_popularity=None,
+    max_popularity=None,
+    min_duration_ms=None,
+    max_duration_ms=None,
+    explicit=None,
+    album_names=None,
+    song_names=None,
+    limit=50,
+    random_order=True,
+    db_path=DB_PATH,
+):
+    query_parts = [
+        """
+        SELECT DISTINCT s.id, s.name, s.uri, s.popularity, s.album_name, s.duration_ms, s.explicit
+        FROM songs s
+        """
+    ]
+
+    joins = []
+    where_conditions = []
+    params = []
+
+    if playlist_ids:
+        joins.append("JOIN playlist_songs ps ON s.id = ps.song_id")
+
+    if artist_ids or artist_names or genres:
+        joins.append("JOIN song_artists sa ON s.id = sa.song_id")
+        joins.append("JOIN artists a ON sa.artist_id = a.id")
+
+    if playlist_ids:
+        if len(playlist_ids) == 1:
+            where_conditions.append("ps.playlist_id = ?")
+            params.append(playlist_ids[0])
+        else:
+            placeholders = ",".join(["?" for _ in playlist_ids])
+            where_conditions.append(f"ps.playlist_id IN ({placeholders})")
+            params.extend(playlist_ids)
+
+    if artist_ids:
+        if len(artist_ids) == 1:
+            where_conditions.append("a.id = ?")
+            params.append(artist_ids[0])
+        else:
+            placeholders = ",".join(["?" for _ in artist_ids])
+            where_conditions.append(f"a.id IN ({placeholders})")
+            params.extend(artist_ids)
+
+    if artist_names:
+        artist_conditions = []
+        for artist_name in artist_names:
+            artist_conditions.append("a.name LIKE ?")
+            params.append(f"%{artist_name}%")
+        where_conditions.append(f"({' OR '.join(artist_conditions)})")
+
+    if genres:
+        genre_conditions = []
+        for genre in genres:
+            genre_conditions.append("a.genres LIKE ?")
+            params.append(f"%{genre}%")
+        where_conditions.append(f"({' OR '.join(genre_conditions)})")
+
+    if min_popularity is not None:
+        where_conditions.append("s.popularity >= ?")
+        params.append(min_popularity)
+
+    if max_popularity is not None:
+        where_conditions.append("s.popularity <= ?")
+        params.append(max_popularity)
+
+    if min_duration_ms is not None:
+        where_conditions.append("s.duration_ms >= ?")
+        params.append(min_duration_ms)
+
+    if max_duration_ms is not None:
+        where_conditions.append("s.duration_ms <= ?")
+        params.append(max_duration_ms)
+
+    if explicit is not None:
+        where_conditions.append("s.explicit = ?")
+        params.append(int(explicit))
+
+    if album_names:
+        album_conditions = []
+        for album_name in album_names:
+            album_conditions.append("s.album_name LIKE ?")
+            params.append(f"%{album_name}%")
+        where_conditions.append(f"({' OR '.join(album_conditions)})")
+
+    if song_names:
+        song_conditions = []
+        for song_name in song_names:
+            song_conditions.append("s.name LIKE ?")
+            params.append(f"%{song_name}%")
+        where_conditions.append(f"({' OR '.join(song_conditions)})")
+
+    if joins:
+        query_parts.extend(joins)
+
+    if where_conditions:
+        query_parts.append("WHERE " + " AND ".join(where_conditions))
+
+    if random_order:
+        query_parts.append("ORDER BY RANDOM()")
+    else:
+        query_parts.append("ORDER BY s.popularity DESC, s.name ASC")
+
+    if limit:
+        query_parts.append(f"LIMIT {limit}")
+
+    final_query = "\n".join(query_parts)
+
+    return _fetch_all_auto(final_query, params, db_path=db_path)

@@ -1,0 +1,102 @@
+name: Auto Modify Playlists
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  wait-for-sync:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Wait for sync workflow to complete
+      run: |
+        echo "Checking for running sync workflows..."
+        
+        check_running_workflows() {
+          curl -s \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs?status=in_progress&per_page=100" \
+            | jq -r '.workflow_runs[] | select(.name == "Spotify Playlist Sync") | .id'
+        }
+        
+        max_wait=1800
+        wait_time=0
+        check_interval=30
+        
+        while [ $wait_time -lt $max_wait ]; do
+          running_syncs=$(check_running_workflows)
+          
+          if [ -z "$running_syncs" ]; then
+            echo "No sync workflows currently running. Proceeding..."
+            break
+          else
+            echo "Sync workflow(s) still running: $running_syncs"
+            echo "Waiting ${check_interval} seconds before checking again..."
+            sleep $check_interval
+            wait_time=$((wait_time + check_interval))
+          fi
+        done
+        
+        if [ $wait_time -ge $max_wait ]; then
+          echo "Timeout reached. Proceeding anyway after 30 minutes wait."
+        fi
+
+  modify-playlists:
+    runs-on: ubuntu-latest
+    needs: wait-for-sync
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run playlist modification
+      run: python auto_playlists.py
+      env:
+        SPOTIPY_CLIENT_ID: ${{ secrets.SPOTIPY_CLIENT_ID }}
+        SPOTIPY_CLIENT_SECRET: ${{ secrets.SPOTIPY_CLIENT_SECRET }}
+        SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
+
+    - name: Check for changes
+      id: check_changes
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "changes=true" >> $GITHUB_OUTPUT
+        else
+          echo "changes=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Commit and push changes
+      if: steps.check_changes.outputs.changes == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add -A
+        git commit -m "Auto-modify: Modified Spotify playlists [$(date +'%Y-%m-%d %H:%M:%S UTC')]"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Playlist modification completion
+      run: |
+        if [ "${{ steps.check_changes.outputs.changes }}" == "true" ]; then
+          echo "Modification completed with changes committed and pushed"
+        else
+          echo "Modification completed with no changes to commit"
+        fi

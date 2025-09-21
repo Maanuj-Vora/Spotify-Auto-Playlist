@@ -1,13 +1,18 @@
 import logging
 import os
 
+
 class Logger:
-    def __init__(self, name = "spotify_playlist_sync", log_level = logging.INFO, log_file = None):
+    def __init__(
+        self, name="spotify_playlist_sync", log_level=logging.INFO, log_file=None
+    ):
         self.logger = logging.getLogger(name)
         self.logger.setLevel(log_level)
-        
+
         if not self.logger.handlers:
-            formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(filename)s - %(message)s')
+            formatter = logging.Formatter(
+                "%(asctime)s - %(levelname)s - %(filename)s - %(message)s"
+            )
 
             ch = logging.StreamHandler()
             ch.setFormatter(formatter)
