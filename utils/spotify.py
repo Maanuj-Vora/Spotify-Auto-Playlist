@@ -204,8 +204,11 @@ def get_playlist_songs(sp, playlist_id):
 
     while tracks:
         for item in tracks['items']:
-            if item['track']:
+            if item['track'] and item['track'].get('id') and item['track'].get('name'):
                 track_objs.append(item['track'])
+            else:
+                track_info = item['track'] if item['track'] else "None"
+                logger.warning(f"Skipping track with missing essential data: {track_info}")
         if tracks['next']:
             tracks = sp.next(tracks)
         else:

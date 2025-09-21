@@ -212,15 +212,20 @@ def update_songs():
             new_tracks = []
             
             for track in tracks:
-                logger.info(f"Processing track: {track['name']} (ID: {track['id']})")
+                if not track or not track.get('id') or not track.get('name'):
+                    logger.warning(f"Skipping track with missing data: {track}")
+                    continue
+                    
+                track_name = track['name']
                 track_id = track['id']
+                logger.info(f"Processing track: {track_name} (ID: {track_id})")
                 current_song_ids.append(track_id)
 
                 if db.get_song_by_id(track_id) is None:
-                    logger.info(f"\t- New song detected: {track['name']} (ID: {track_id})")
+                    logger.info(f"\t- New song detected: {track_name} (ID: {track_id})")
                     new_tracks.append(track)
                 else:
-                    logger.info(f"\t- Existing song: {track['name']} (ID: {track_id})")
+                    logger.info(f"\t- Existing song: {track_name} (ID: {track_id})")
             
             if new_tracks:
                 logger.info(f"Batch processing artist info for {len(new_tracks)} new tracks")
