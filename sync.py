@@ -209,6 +209,7 @@ def update_songs():
         try:
             tracks = spotify.get_playlist_songs(sp, playlist_id)
             current_song_ids = []
+            new_tracks = []
             
             for track in tracks:
                 logger.info(f"Processing track: {track['name']} (ID: {track['id']})")
@@ -217,19 +218,32 @@ def update_songs():
 
                 if db.get_song_by_id(track_id) is None:
                     logger.info(f"\t- New song detected: {track['name']} (ID: {track_id})")
+                    new_tracks.append(track)
                 else:
                     logger.info(f"\t- Existing song: {track['name']} (ID: {track_id})")
-                    continue
+            
+            if new_tracks:
+                logger.info(f"Batch processing artist info for {len(new_tracks)} new tracks")
+                artist_data = spotify.process_tracks_with_batched_artists(sp, new_tracks)
+                
+                for track in new_tracks:
+                    track_id = track['id']
+                    db.insert_song(track)
 
-                db.insert_song(track)
-
-                artists = track['artists']
-                for artist in artists:
-                    logger.info(f"\tProcessing artist: {artist['name']} (ID: {artist['id']})")
-                    artist_id = artist['id']
-                    artist_info = spotify.get_artist_info(sp, artist_id)
-                    db.insert_artist(artist_info)
-                    db.insert_song_artist(track_id, artist_id)
+                    artists = track['artists']
+                    for artist in artists:
+                        logger.info(f"\tProcessing artist: {artist['name']} (ID: {artist['id']})")
+                        artist_id = artist['id']
+                        
+                        if artist_id in artist_data:
+                            artist_info = artist_data[artist_id]
+                            db.insert_artist(artist_info)
+                        else:
+                            logger.warning(f"Artist {artist_id} not found in batch, fetching individually")
+                            artist_info = spotify.get_artist_info(sp, artist_id)
+                            db.insert_artist(artist_info)
+                        
+                        db.insert_song_artist(track_id, artist_id)
             
             sync_result = db.sync_playlist_songs(playlist_id, current_song_ids)
             
@@ -463,6 +477,32 @@ try:
         details=f"Processed {len(playlists)} playlists",
         success=True
     )
+
+except spotipy.exceptions.SpotifyException as e:
+    error_message = str(e).lower()
+    if "rate" in error_message and "limit" in error_message:
+        logger.error("Spotify rate limit exceeded during sync process.")
+        logger.error("The application will exit to prevent further rate limit violations.")
+        logger.error(f"Error details: {str(e)}")
+        exit(1)
+    elif hasattr(e, 'http_status') and e.http_status == 429:
+        logger.error("Spotify API returned HTTP 429 (Too Many Requests) during sync process.")
+        logger.error("The application will exit to prevent further rate limit violations.")
+        logger.error(f"Error details: {str(e)}")
+        exit(1)
+    else:
+        logger.error(f"Spotify API error during sync: {str(e)}")
+        raise
+except Exception as e:
+    error_message = str(e).lower()
+    if "rate" in error_message and "limit" in error_message:
+        logger.error("Rate limit error detected during sync process.")
+        logger.error("The application will exit to prevent further rate limit violations.")
+        logger.error(f"Error details: {str(e)}")
+        exit(1)
+    else:
+        logger.error(f"Unexpected error during sync: {str(e)}")
+        raise
     
 finally:
     logger.info("Closing database session...")
