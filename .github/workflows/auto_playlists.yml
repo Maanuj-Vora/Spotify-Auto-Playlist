@@ -50,6 +50,7 @@ jobs:
 
   modify-playlists:
     runs-on: ubuntu-latest
+    environment: actions
     needs: wait-for-sync
     
     steps:
