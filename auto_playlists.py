@@ -40,14 +40,20 @@ if os.getenv("SPOTIFY_REFRESH_TOKEN"):
 
     with open(".cache", "w") as f:
         json.dump(cache_data, f)
+    
+    auth_manager = SpotifyOAuth(
+        scope="playlist-modify-public playlist-modify-private",
+        redirect_uri="http://localhost:8080",
+        cache_path=".cache"
+    )
+    sp = spotipy.Spotify(auth_manager=auth_manager)
 else:
     logger.info("No refresh token found, will use normal OAuth flow")
-
-auth_manager = SpotifyOAuth(
-    scope="playlist-modify-public playlist-modify-private",
-    redirect_uri="http://localhost:8080",
-)
-sp = spotipy.Spotify(auth_manager=auth_manager)
+    auth_manager = SpotifyOAuth(
+        scope="playlist-modify-public playlist-modify-private",
+        redirect_uri="http://localhost:8080",
+    )
+    sp = spotipy.Spotify(auth_manager=auth_manager)
 
 logger.info("Spotify authentication successful")
 
