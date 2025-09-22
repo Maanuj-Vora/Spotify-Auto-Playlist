@@ -10,7 +10,7 @@ class HiddenGems(BasePlaylist):
 
     @property
     def description(self):
-        return "songs from my playlists that are not very popular according to spotify"
+        return "songs from my playlists that are not very popular according to spotify - refreshes approx. every 3 hrs"
 
     @property
     def public(self):
